@@ -1,0 +1,4 @@
+faker
+psycopg2-binary
+openai
+redis[hiredis]
