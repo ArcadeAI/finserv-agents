@@ -2,6 +2,13 @@
   "name": "finserv-agents",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build:web": "npm run build --workspace web",
+    "lint:web": "npm run lint --workspace web",
+    "check:py": "uv run python -m py_compile database/runtime_config.py database/setup_indices.py database/materialize.py database/demo_reset.py database/db_flush.py database/seed_data.py database/generate_embeddings.py scripts/sync_arcade_secrets.py tools/src/redis_mcp/runtime_contract.py tools/src/redis_mcp/indexing.py tools/src/redis_mcp/redisvl_gateway.py tools/src/redis_mcp/server.py",
+    "verify": "npm run check:py && npm run lint:web && npm run build:web",
+    "validate": "npm run verify"
+  },
   "workspaces": [
     "web"
   ]

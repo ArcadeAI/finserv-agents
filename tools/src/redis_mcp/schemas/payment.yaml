@@ -1,0 +1,67 @@
+index:
+  name: idx:finserv:payment
+  prefix: finserv:payment
+  key_separator: ':'
+  storage_type: json
+fields:
+- name: loan_id
+  type: tag
+  path: $.loan_id
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: borrower_id
+  type: tag
+  path: $.borrower_id
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: amount
+  type: numeric
+  path: $.amount
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: status
+  type: tag
+  path: $.status
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: days_past_due
+  type: numeric
+  path: $.days_past_due
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: payment_method
+  type: tag
+  path: $.payment_method
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+version: 0.1.0

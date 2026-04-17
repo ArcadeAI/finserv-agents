@@ -15,13 +15,25 @@ import {
 interface RedisContext {
   context: Record<string, unknown> | null;
   events: { id: string; fields: Record<string, string> }[];
-  sessionKeys: string[];
   error?: string;
-  timestamp: string;
 }
 
 interface ContextPanelProps {
   agentRole: string;
+}
+
+const timestampFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+function formatTimestamp(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return timestampFormatter.format(date);
 }
 
 export function ContextPanel({ agentRole }: ContextPanelProps) {
@@ -60,6 +72,7 @@ export function ContextPanel({ agentRole }: ContextPanelProps) {
   const urgent = ctx?.urgent_flags as string[] | undefined;
   const notes = ctx?.notes as string | undefined;
   const lastUpdated = ctx?.last_updated as string | undefined;
+  const formattedLastUpdated = formatTimestamp(lastUpdated);
 
   return (
     <div className="flex flex-col h-full bg-slate-950">
@@ -119,10 +132,10 @@ export function ContextPanel({ agentRole }: ContextPanelProps) {
                 <span className="text-[10px] text-slate-500 ml-1.5">{shift}</span>
               )}
             </div>
-            {lastUpdated && (
+            {formattedLastUpdated && (
               <span className="text-[9px] text-slate-600 ml-auto flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
-                {lastUpdated}
+                {formattedLastUpdated}
               </span>
             )}
           </div>
@@ -280,19 +293,10 @@ export function ContextPanel({ agentRole }: ContextPanelProps) {
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 px-4 py-2 border-t border-slate-800/60 flex items-center justify-between">
+      <div className="shrink-0 px-4 py-2 border-t border-slate-800/60">
         <span className="text-[9px] text-slate-600">
-          Polling every 2s
+          {data?.error ? "Redis unavailable" : "Live from Redis Cloud"}
         </span>
-        {data?.sessionKeys && data.sessionKeys.length > 0 && (
-          <div className="flex gap-1">
-            {data.sessionKeys.map((k) => (
-              <span key={k} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-red-500/10 text-red-400/60">
-                {k}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

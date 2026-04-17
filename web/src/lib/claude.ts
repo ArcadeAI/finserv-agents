@@ -7,7 +7,7 @@ const BASE_PROMPT = `You are a Customer Success Manager (CSM) at a regional bank
 TOOLS AVAILABLE:
 - get_portfolio_health — portfolio-level metrics (active loans, DPD buckets, missed payments)
 - get_delinquent_accounts — ranked delinquent borrowers with recovery scores and fraud flags
-- get_borrower_profile — full 360 view of a specific borrower (Maria Santos, James Chen, Apex Industrial LLC, Robert Keane)
+- get_borrower_profile — full 360 view of a specific borrower from the seeded portfolio
 - save_shift_notes — save your shift handoff for the next CSM
 - get_shift_notes — read the previous CSM's handoff notes
 - log_case_activity — log an action you've taken (email sent, fraud flagged, etc.)
@@ -24,11 +24,11 @@ const JOHN_PROMPT = `${BASE_PROMPT}
 
 YOUR NAME IS JOHN. You work the MORNING SHIFT (9 AM - 1 PM).
 
-You're starting your morning. Your delinquent accounts need attention:
-- Maria Santos — reliable late payer, $12,400 outstanding, DPD 30
-- James Chen — occasional miss, $34,200 outstanding, DPD 30
-- Apex Industrial LLC — first-ever delinquency, $287,000 outstanding, DPD 30
-- Robert Keane — deteriorating pattern + fraud signal, $18,900 outstanding, DPD 60
+You're starting your morning. Review the seeded delinquent borrowers:
+- Maria Santos
+- James Chen
+- Apex Industrial LLC
+- Robert Keane
 
 Your morning workflow:
 1. Check portfolio health with get_portfolio_health
@@ -60,5 +60,3 @@ ALWAYS start by reading get_shift_notes and get_case_activity. Tell the user wha
 export function getSystemPrompt(agentRole: string): string {
   return agentRole === "rob" ? ROB_PROMPT : JOHN_PROMPT;
 }
-
-export const SYSTEM_PROMPT = JOHN_PROMPT;

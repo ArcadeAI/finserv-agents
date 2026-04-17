@@ -1,186 +1,258 @@
 # FinServ Agents
 
-AI-powered loan servicing agents demonstrating **agent shift handoff** with shared context via [Redis](https://redis.io) and governed MCP tool execution via [Arcade](https://arcade.dev).
+A live loan-servicing demo built around **Redis**, **RedisVL**, and **Arcade**.
 
-Two CSM agents — **John** (morning shift) and **Rob** (afternoon shift) — work the same portfolio of delinquent borrowers. John researches accounts, sends outreach, and flags issues. Rob picks up where John left off, reading the shared handoff context from Redis without starting from scratch.
+Two servicing agents share the same book of business:
+
+- **John** works the morning shift
+- **Rob** picks up the afternoon shift
+
+They see the same borrower profiles, delinquency views, shift notes, and case activity in real time. Redis is the shared operational memory layer. RedisVL powers borrower search and retrieval. Arcade exposes the experience as a safe, curated MCP toolkit instead of raw database access.
 
 ![Shift Handoff Demo](web/public/shift-handoff-demo.png)
 
-## Architecture
+## What This Demo Shows
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Next.js App                               │
-│                                                                  │
-│   ┌─────────────────┐              ┌──────────────────────┐      │
-│   │   Agent Chat    │              │  Shift Handoff Panel │      │
-│   │  (John or Rob)  │              │  (live Redis state)  │      │
-│   └────────┬────────┘              └──────────┬───────────┘      │
-│            │                                  │                  │
-│      Arcade MCP Gateway                 Direct Redis read        │
-│            │                           (sidecar, polling)        │
-│    ┌───────┴────────┐                                            │
-│    │ FinServ Tools  │ ← ngrok ← local Redis :6379               │
-│    │ (governed MCP) │                                            │
-│    └────────────────┘                                            │
-│            │                                                     │
-│   PostgreSQL :5432 (materialized into Redis cache)               │
-└──────────────────────────────────────────────────────────────────┘
-```
+- A realistic **shift handoff** workflow between two agents
+- A live **Redis-backed operational data plane** for both the app and the tools
+- A constrained **tool-first AI workflow** through Arcade
+- A simple but credible demo story: inspect portfolio health, drill into a borrower, take action, leave notes, and hand work to the next agent
 
-**How it works:**
+## How It Works
 
-1. Loan data lives in PostgreSQL (borrowers, loans, payments, fraud signals)
-2. A materialization step pre-computes portfolio views and caches them in Redis
-3. Agents access data through domain-specific MCP tools via Arcade (governed, audited)
-4. Shift handoff context is stored in Redis and visible in the UI in real-time
-5. The UI panel reads Redis directly (sidecar) for live updates
+The demo flow is straightforward:
 
-## MCP Tools
+1. **PostgreSQL** holds the source loan-servicing dataset.
+2. A setup/materialization step writes that data into **Redis Cloud** as JSON documents and creates the RediSearch indices used by RedisVL.
+3. **Arcade** deploys the `finserv_tools` MCP toolkit on top of that Redis data.
+4. The **Next.js** app talks to Arcade, and the model uses those tools to answer questions and take workflow actions.
+5. John and Rob both read and write the same live Redis state, so the handoff feels immediate.
 
-All tools are domain-specific financial services operations. No raw database primitives — the agent speaks the language of loan servicing, not Redis commands.
+## Components
 
-### Portfolio Tools (cached in Redis, materialized from PostgreSQL)
+- **PostgreSQL**
+  Source system for borrowers, loans, payments, and fraud signals.
 
-| Tool | What It Does |
-|---|---|
-| `get_portfolio_health` | Active loans, total outstanding, DPD 30/60/90+ buckets, credit score avg, missed payments |
-| `get_delinquent_accounts` | Ranked delinquent borrowers with recovery scores and fraud cross-reference |
-| `get_borrower_profile` | Full 360 view: borrower details, loans, payment history, fraud signals |
+- **Redis Cloud**
+  Stores:
+  - borrower / loan / payment / fraud JSON documents
+  - RediSearch indices defined by checked-in RedisVL schema YAML files
+  - derived portfolio views
+  - workflow keys for shift notes and case activity
 
-### Shift Handoff Tools (Redis-backed context)
+- **RedisVL**
+  Powers borrower lookup and related-record retrieval over RediSearch.
 
-| Tool | What It Does |
-|---|---|
-| `save_shift_notes` | Save shift handoff: summary, borrowers reviewed, actions taken, pending items, urgent flags |
-| `get_shift_notes` | Read the previous shift's handoff notes |
-| `log_case_activity` | Log an action on a borrower case (email sent, fraud flagged, payment plan arranged) |
-| `get_case_activity` | Read the activity log across all shifts |
+- **Arcade**
+  Hosts the `finserv_tools` MCP toolkit used by the app.
 
-## Quick Start
+- **Next.js**
+  Local UI for chatting as John or Rob.
 
-### Prerequisites
+## Happy Path
 
-- Node.js 18+, Python 3.10+, Docker, [ngrok](https://ngrok.com), [Arcade CLI](https://docs.arcade.dev)
+If you are just trying to run the demo end to end, this is the path.
 
-### 1. Install
+### 1. Prerequisites
+
+You need:
+
+- Node.js 18+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- Docker
+- a Redis Cloud database
+- an Arcade account
+- an Anthropic API key
+
+### 2. Install dependencies
 
 ```bash
 make install
 ```
 
-### 2. Start PostgreSQL + Redis, seed data, materialize to Redis
+This creates `.env` from `.env.example` if needed, installs the web dependencies, and syncs the Python environments.
+
+### 3. Fill in `.env`
+
+At minimum, set:
+
+```env
+ANTHROPIC_API_KEY=...
+ARCADE_API_KEY=...
+ARCADE_USER_ID=you@example.com
+REDIS_URL=rediss://default:password@redis.example.com:6380/0
+```
+
+Leave this blank until your Arcade gateway exists:
+
+```env
+ARCADE_GATEWAY_URL=
+```
+
+Notes:
+
+- `DATABASE_URL` already defaults to the local Postgres container.
+- `OPENAI_API_KEY` is optional and only used by the offline embeddings script.
+
+### 4. Load the demo data
 
 ```bash
 make setup
 ```
 
-This starts PostgreSQL and Redis in Docker, seeds loan data (500 borrowers, 800 loans, 14k+ payments), and materializes portfolio views into Redis for cached access.
+This:
 
-### 3. Expose Redis via ngrok
+- starts PostgreSQL
+- applies the schema
+- seeds the portfolio dataset
+- writes entity data into Redis JSON
+- creates the checked-in RedisVL / RediSearch indices
+- rebuilds the derived Redis views
+- clears old shift notes and activity for a clean run
 
-```bash
-ngrok tcp 6379
-```
-
-### 4. Deploy to Arcade
+### 5. Deploy the MCP tools to Arcade
 
 ```bash
 arcade login
-arcade secret set REDIS_URL="redis://<ngrok-host>:<ngrok-port>"
 make deploy
 ```
 
-### 5. Create Arcade Gateway
+This syncs `REDIS_URL` into Arcade secrets and deploys the toolkit from `tools/src/redis_mcp/server.py`.
 
-In the [Arcade Dashboard](https://api.arcade.dev/dashboard/gateways):
-1. Create a gateway
-2. Add the `finserv_tools` toolkit
-3. Copy the gateway URL
+Compatibility note:
 
-### 6. Configure `.env`
+- the toolkit is intentionally pinned to `redisvl==0.3.3`
+- the tools runtime is pinned to `redis>=5.2.1,<6`
+- `make deploy` uses the locked `tools/uv.lock` environment
 
-```bash
-cp .env.example .env
-```
+### 6. Create your Arcade gateway
 
-```
-ANTHROPIC_API_KEY=sk-ant-...
-ARCADE_API_KEY=arc_...
-ARCADE_GATEWAY_URL=https://api.arcade.dev/mcp/<your-gateway>
-ARCADE_USER_ID=you@arcade.dev
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/loanops
-REDIS_URL=redis://localhost:6379
-```
+In the Arcade dashboard:
 
-### 7. Run
+1. Create a gateway.
+2. Attach the `finserv_tools` toolkit.
+3. Copy the gateway URL into `ARCADE_GATEWAY_URL` in your local `.env`.
+
+### 7. Start the app
 
 ```bash
 make dev
 ```
 
-## Shift Handoff Demo
+Open:
 
-Open two browser tabs:
+- `http://localhost:3000?agent=john`
+- `http://localhost:3000?agent=rob`
 
-| Tab | URL | Agent |
-|---|---|---|
-| Morning Shift | `http://localhost:3000?agent=john` | **John** — reviews accounts, sends outreach, flags issues |
-| Afternoon Shift | `http://localhost:3000?agent=rob` | **Rob** — picks up where John left off |
+At that point the demo is live.
 
-### Demo Flow
+## Suggested Demo Flow
 
-**John (morning):**
-1. "I'm starting my shift — give me the portfolio health check"
-2. "Show me the delinquent accounts I need to work on"
-3. "Pull up Maria Santos' profile — I want to send her a reminder"
-4. "Flag Robert Keane's account for fraud"
-5. "Save my shift notes for Rob"
+### John: morning shift
 
-**Rob (afternoon):**
-1. "What did John work on this morning?" (reads shift notes + activity log)
-2. "Follow up on the items John left pending"
-3. "Check if Maria Santos needs another touch"
+Try prompts like:
 
-The **Shift Handoff** panel on the right updates live as each agent works — showing the shared context, actions taken, and pending items.
+1. "Give me the portfolio health check."
+2. "Show me the delinquent accounts I should work first."
+3. "Pull up Maria Santos' profile."
+4. "Log that I sent Maria a reminder."
+5. "Save my shift notes for Rob."
 
-### Demo Characters
+### Rob: afternoon shift
 
-| Name | Pattern | Outstanding | Key Detail |
-|---|---|---|---|
-| Maria Santos | Reliable late payer | $12,400 | Always pays 5-12 days late |
-| James Chen | Occasional miss | $34,200 | One prior miss, quickly resolved |
-| Apex Industrial LLC | First-ever delinquency | $287,000 | Business account, 22 DPD |
-| Robert Keane | Deteriorating + fraud | $18,900 | OPEN income mismatch signal |
+Then switch to Rob and try:
+
+1. "What did John work on today?"
+2. "Show me the latest case activity."
+3. "Follow up on the borrowers John left pending."
+
+The right-hand panel should reflect the shared Redis state as both agents work.
+
+## MCP Tools
+
+The deployed toolkit exposes:
+
+- `get_portfolio_health`
+- `get_delinquent_accounts`
+- `get_borrower_profile`
+- `save_shift_notes`
+- `get_shift_notes`
+- `log_case_activity`
+- `get_case_activity`
+
+Under the hood:
+
+- `get_borrower_profile` uses RedisVL queries over RediSearch
+- portfolio summary tools read derived Redis JSON views
+- handoff tools read and write Redis workflow keys directly
+
+## Redis Layout
+
+Main keys used by the demo:
+
+- `finserv:borrower:{borrower_id}`
+- `finserv:loan:{loan_id}`
+- `finserv:payment:{payment_id}`
+- `finserv:fraud_signal:{signal_id}`
+- `view:portfolio_health`
+- `view:delinquent_accounts`
+- `workflow:shift_notes`
+- `stream:case_activity`
+
+RedisVL schema YAMLs live in `tools/src/redis_mcp/schemas/`.
+
+## Useful Commands
+
+| Command | What it does |
+|---|---|
+| `make install` | Install dependencies and create `.env` if missing |
+| `make setup` | Full local bootstrap: Postgres, seed, Redis materialization |
+| `make setup-indices` | Ensure the checked-in RedisVL search indices exist |
+| `make materialize` | Reload entity data and rebuild Redis views |
+| `make demo-reset` | Clear only shift notes and case activity |
+| `make db-flush` | Drop FinServ search indices and flush the Redis DB |
+| `make deploy` | Sync Arcade secrets and deploy the MCP toolkit |
+| `make dev` | Start the local app |
+| `make validate` | Run local validation checks |
+
+## Troubleshooting
+
+### Chat opens, but no tools are available
+
+Check:
+
+- `make deploy` completed successfully
+- your Arcade gateway includes `finserv_tools`
+- `ARCADE_GATEWAY_URL` points at the correct gateway
+
+### Borrower lookups or views look stale
+
+Run:
+
+```bash
+make materialize
+```
+
+### You want a completely fresh demo run
+
+Run:
+
+```bash
+make db-flush
+make setup
+```
+
+Warning: `make db-flush` is destructive for the Redis database selected by `REDIS_URL`.
 
 ## Project Structure
 
-```
+```text
 finserv-agents/
-├── web/                              # Next.js frontend + API routes
-│   ├── src/app/                      # Pages, /api/chat, /api/redis/context
-│   ├── src/components/chat/          # Chat UI
-│   ├── src/components/layout/        # AppShell, Header, ContextPanel
-│   └── src/lib/                      # Claude config, MCP client
-├── tools/                            # MCP server (Python, arcade-mcp-server)
-│   └── src/redis_mcp/server.py       # Domain-specific FinServ tools → Arcade Cloud
-├── database/                         # Schema, seed data, materialization
-│   ├── schema.sql
-│   ├── seed_data.py
-│   ├── materialize.py                # Pre-compute Postgres → Redis cache
-│   └── embeddings.json
-├── docker-compose.yml                # PostgreSQL + Redis 8
+├── web/                    # Next.js demo UI
+├── tools/src/redis_mcp/    # MCP server and RedisVL retrieval layer
+├── database/               # Schema, seed data, materialization scripts
+├── docker-compose.yml      # Local PostgreSQL
 ├── Makefile
 └── .env.example
 ```
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `make install` | Install all dependencies |
-| `make setup` | Start Docker, seed Postgres, materialize to Redis |
-| `make materialize` | Re-materialize Postgres views into Redis |
-| `make dev` | Start Next.js dev server |
-| `make deploy` | Deploy MCP server to Arcade Cloud |
-| `make clean` | Tear down Docker volumes |

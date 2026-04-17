@@ -6,19 +6,19 @@ const JOHN_SUGGESTIONS = [
     desc: "Step 1 — Review portfolio and begin shift",
   },
   {
-    text: "Pull up Maria Santos' full profile. She's at DPD 30 and I need to understand her payment pattern before I call her. Log that I'm researching her case.",
+    text: "Pull up Maria Santos' full profile so I can prepare outreach. Log that I'm researching her case.",
     desc: "Step 2 — Research a specific borrower",
   },
   {
-    text: "I just spoke with Maria. She said she'll pay by Friday — it's a childcare timing issue. Log the call and update the shift notes with this. Also note that Apex Industrial needs a follow-up call this afternoon — I didn't get to them.",
+    text: "Log my call with Maria, update the shift notes, and note that Apex Industrial still needs follow-up this afternoon.",
     desc: "Step 3 — Log actions and flag pending work",
   },
   {
-    text: "Robert Keane has a fraud signal. Pull his profile so I can review it. This needs to be escalated — flag it as urgent in the shift notes for Rob.",
+    text: "Pull Robert Keane's profile so I can review the fraud signal and flag the case as urgent in the shift notes for Rob.",
     desc: "Step 4 — Investigate and escalate fraud",
   },
   {
-    text: "I'm heading off shift. Save my complete handoff: I spoke with Maria (paying Friday), researched Keane's fraud flag (needs escalation), and Apex Industrial still needs their first outreach call. Rob should start with Keane's fraud case.",
+    text: "I'm heading off shift. Save my complete handoff covering Maria, Robert Keane, and Apex Industrial, and make clear that Rob should start with the most urgent open item.",
     desc: "Step 5 — End-of-shift handoff for Rob",
   },
 ];
@@ -29,15 +29,15 @@ const ROB_SUGGESTIONS = [
     desc: "Step 1 — Read John's handoff context",
   },
   {
-    text: "John flagged Robert Keane's fraud case as urgent. Pull up Keane's borrower profile so I can review and escalate it.",
+    text: "John flagged Robert Keane's fraud case as urgent. Pull up his borrower profile so I can review and escalate it.",
     desc: "Step 2 — Handle urgent item from handoff",
   },
   {
-    text: "John said Apex Industrial still needs their first outreach call. Pull their profile — I need to understand their situation before calling a $287K business account.",
+    text: "John said Apex Industrial still needs their first outreach call. Pull their profile so I can prepare before calling.",
     desc: "Step 3 — Pick up pending work John didn't finish",
   },
   {
-    text: "Log everything I've done this afternoon and save my shift notes. I handled the Keane fraud escalation and called Apex Industrial. Maria Santos should pay by Friday per John's conversation — just needs a check-in if she doesn't.",
+    text: "Log everything I've done this afternoon and save my shift notes. I handled the Keane escalation, followed up on Apex Industrial, and noted what still needs attention next shift.",
     desc: "Step 4 — Save handoff for tomorrow's shift",
   },
 ];
