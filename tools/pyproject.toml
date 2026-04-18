@@ -1,11 +1,12 @@
 [project]
 name = "finserv-mcp-server"
-version = "0.2.0"
-description = "FinServ Agents — Domain-specific MCP tools for loan servicing and Redis context"
-requires-python = ">=3.10"
+version = "0.3.0"
+description = "FinServ Agents — Curated MCP tools over RedisVL and Redis Cloud"
+requires-python = ">=3.11"
 dependencies = [
     "arcade-mcp-server>=1.11.1,<2.0.0",
-    "redis[hiredis]>=6.0.0",
+    "redis>=5.2.1,<6.0.0",
+    "redisvl==0.3.3",
 ]
 
 [build-system]

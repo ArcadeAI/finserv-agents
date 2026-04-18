@@ -26,13 +26,6 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
       <X className="w-3.5 h-3.5 text-rose-400" />
     );
 
-  const durationLabel =
-    toolCall.duration_ms != null
-      ? toolCall.duration_ms >= 1000
-        ? `${(toolCall.duration_ms / 1000).toFixed(1)}s`
-        : `${toolCall.duration_ms}ms`
-      : null;
-
   return (
     <div
       className={`bg-slate-900 border-l-2 ${borderColor} rounded-md my-2 ${
@@ -49,11 +42,6 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
         </span>
         <div className="flex items-center gap-1.5 shrink-0">
           {statusIcon}
-          {durationLabel && (
-            <span className="text-[11px] text-slate-500 font-mono tabular-nums">
-              {durationLabel}
-            </span>
-          )}
           {expanded ? (
             <ChevronDown className="w-3 h-3 text-slate-500" />
           ) : (

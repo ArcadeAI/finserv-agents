@@ -30,6 +30,8 @@ fake = Faker()
 Faker.seed(42)
 random.seed(42)
 
+SEED_NAMESPACE = uuid.UUID("8e7e9951-d2e3-4b88-95ac-e6c18cd1dfe1")
+
 DB_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5432/loanops",
@@ -156,6 +158,10 @@ DELINQUENCY_PATTERNS = [
     "fraud_victim", "divorce_disruption",
 ]
 
+def stable_uuid(*parts: object) -> uuid.UUID:
+    key = "::".join(str(part) for part in parts)
+    return uuid.uuid5(SEED_NAMESPACE, key)
+
 
 def connect():
     return psycopg2.connect(DB_URL)
@@ -166,7 +172,7 @@ def generate_borrowers(conn, count=496):
     borrowers = []
     # Demo characters first
     for char in DEMO_CHARACTERS:
-        bid = uuid.uuid4()
+        bid = stable_uuid("borrower", "demo", char["full_name"])
         char["_id"] = bid
         borrowers.append((
             bid,
@@ -184,7 +190,7 @@ def generate_borrowers(conn, count=496):
         ))
 
     # Random borrowers
-    for _ in range(count):
+    for idx in range(count):
         is_business = random.random() < 0.3
         credit = random.gauss(700, 60)
         credit = max(550, min(850, int(credit)))
@@ -196,7 +202,7 @@ def generate_borrowers(conn, count=496):
             tier = "SUBPRIME"
 
         borrowers.append((
-            uuid.uuid4(),
+            stable_uuid("borrower", idx),
             fake.company() if is_business else fake.name(),
             fake.company_email() if is_business else fake.email(),
             fake.phone_number(),
@@ -228,11 +234,12 @@ def generate_borrowers(conn, count=496):
 def generate_loans(conn, borrowers):
     """Generate ~800 loans, including demo character loans."""
     loans = []
-    borrower_ids = [b[0] for b in borrowers]
+    demo_borrower_ids = {char["_id"] for char in DEMO_CHARACTERS}
+    borrower_ids = [b[0] for b in borrowers if b[0] not in demo_borrower_ids]
 
     # Demo character loans
     for char in DEMO_CHARACTERS:
-        lid = uuid.uuid4()
+        lid = stable_uuid("loan", "demo", char["full_name"])
         char["_loan_id"] = lid
         originated = date(2024, 2, 1)
         term = char["term_months"]
@@ -254,7 +261,7 @@ def generate_loans(conn, borrowers):
     statuses = ["CURRENT"] * 70 + ["DELINQUENT_30"] * 12 + ["DELINQUENT_60"] * 6 + \
                ["DELINQUENT_90"] * 3 + ["DEFAULT"] * 2 + ["PAID_OFF"] * 7
 
-    for _ in range(796):
+    for idx in range(796):
         bid = random.choice(borrower_ids)
         ltype = random.choice(LOAN_TYPES)
 
@@ -294,7 +301,7 @@ def generate_loans(conn, borrowers):
             outstanding = round(max(0, principal - monthly * months_elapsed * 0.3), 2)
 
         loans.append((
-            uuid.uuid4(), bid, ltype, principal, rate, term,
+            stable_uuid("loan", idx), bid, ltype, principal, rate, term,
             monthly, outstanding, status, originated, maturity,
         ))
 
@@ -410,7 +417,7 @@ def generate_payments(conn, loans):
                 dpd = max(dpd, (today - due).days)
 
             payments.append((
-                uuid.uuid4(),
+                stable_uuid("payment", loan_id, month_idx),
                 loan_id,
                 borrower_id,
                 round(monthly, 2),
@@ -455,7 +462,7 @@ def _insert_payments(conn, payments):
 def generate_recovery_narratives(conn, count=100):
     """Generate recovery history narratives."""
     narratives = []
-    for _ in range(count):
+    for idx in range(count):
         template = random.choice(RECOVERY_NARRATIVES)
         method = random.choice(OUTREACH_METHODS)
         outcome = random.choices(OUTCOMES, weights=[50, 10, 25, 15])[0]
@@ -464,7 +471,7 @@ def generate_recovery_narratives(conn, count=100):
         narrative = template.format(method=method, outcome=outcome.lower(), days=days)
 
         narratives.append((
-            uuid.uuid4(),
+            stable_uuid("recovery", idx),
             random.choice(["INDIVIDUAL", "BUSINESS"]),
             random.choice(DELINQUENCY_PATTERNS),
             method,
@@ -488,15 +495,16 @@ def generate_recovery_narratives(conn, count=100):
     print(f"  Inserted {len(narratives)} recovery narratives")
 
 
-def generate_fraud_signals(conn):
+def generate_fraud_signals(conn, loans):
     """Generate 15 fraud signals. Robert Keane's is OPEN."""
     signals = []
+    demo_borrower_ids = {char["_id"] for char in DEMO_CHARACTERS}
 
     # Robert Keane's OPEN fraud signal
     robert_id = DEMO_CHARACTERS[3]["_id"]
     robert_loan = DEMO_CHARACTERS[3]["_loan_id"]
     signals.append((
-        uuid.uuid4(),
+        stable_uuid("fraud", "demo", "Robert Keane"),
         robert_id,
         robert_loan,
         "INCOME_MISMATCH",
@@ -507,12 +515,12 @@ def generate_fraud_signals(conn):
         "OPEN",
     ))
 
-    # 14 more signals for random borrowers (mostly CLEARED)
-    with conn.cursor() as cur:
-        cur.execute("SELECT borrower_id FROM borrowers ORDER BY random() LIMIT 14")
-        random_borrowers = [r[0] for r in cur.fetchall()]
-        cur.execute("SELECT loan_id, borrower_id FROM loans ORDER BY random() LIMIT 14")
-        random_loans = cur.fetchall()
+    # 14 more signals for non-demo borrowers (mostly CLEARED)
+    non_demo_loans = [
+        (loan_id, borrower_id)
+        for loan_id, borrower_id, *_ in loans
+        if borrower_id not in demo_borrower_ids
+    ]
 
     signal_types = ["INCOME_MISMATCH", "IDENTITY_INCONSISTENCY", "VELOCITY", "GEO_ANOMALY"]
     severities = ["HIGH", "MEDIUM", "LOW"]
@@ -536,10 +544,9 @@ def generate_fraud_signals(conn):
     ]
 
     for i in range(14):
-        bid = random_loans[i][1] if i < len(random_loans) else random_borrowers[i]
-        lid = random_loans[i][0] if i < len(random_loans) else None
+        lid, bid = non_demo_loans[i]
         signals.append((
-            uuid.uuid4(),
+            stable_uuid("fraud", i),
             bid,
             lid,
             random.choice(signal_types),
@@ -617,7 +624,7 @@ def main():
     load_prebaked_embeddings(conn)
 
     print("Generating fraud signals...")
-    generate_fraud_signals(conn)
+    generate_fraud_signals(conn, loans)
 
     conn.close()
     print("\nSeed data generation complete!")

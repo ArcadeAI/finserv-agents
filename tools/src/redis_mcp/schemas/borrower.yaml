@@ -1,0 +1,103 @@
+index:
+  name: idx:finserv:borrower
+  prefix: finserv:borrower
+  key_separator: ':'
+  storage_type: json
+fields:
+- name: full_name
+  type: text
+  path: $.full_name
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    weight: 2.0
+    no_stem: false
+    withsuffixtrie: false
+    index_empty: false
+    unf: false
+- name: email
+  type: text
+  path: $.email
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    weight: 1.0
+    no_stem: true
+    withsuffixtrie: false
+    index_empty: false
+    unf: false
+- name: borrower_type
+  type: tag
+  path: $.borrower_type
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: company_name
+  type: text
+  path: $.company_name
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    weight: 1.0
+    no_stem: false
+    withsuffixtrie: false
+    index_empty: false
+    unf: false
+- name: stated_income
+  type: numeric
+  path: $.stated_income
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: credit_score
+  type: numeric
+  path: $.credit_score
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: risk_tier
+  type: tag
+  path: $.risk_tier
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: country
+  type: tag
+  path: $.country
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: state
+  type: tag
+  path: $.state
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+version: 0.1.0

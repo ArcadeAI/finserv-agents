@@ -1,0 +1,80 @@
+index:
+  name: idx:finserv:loan
+  prefix: finserv:loan
+  key_separator: ':'
+  storage_type: json
+fields:
+- name: borrower_id
+  type: tag
+  path: $.borrower_id
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: loan_type
+  type: tag
+  path: $.loan_type
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: principal
+  type: numeric
+  path: $.principal
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: interest_rate
+  type: numeric
+  path: $.interest_rate
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    unf: false
+- name: term_months
+  type: numeric
+  path: $.term_months
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    unf: false
+- name: monthly_payment
+  type: numeric
+  path: $.monthly_payment
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    unf: false
+- name: outstanding_balance
+  type: numeric
+  path: $.outstanding_balance
+  attrs:
+    sortable: true
+    index_missing: false
+    no_index: false
+    unf: false
+- name: status
+  type: tag
+  path: $.status
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+version: 0.1.0

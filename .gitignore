@@ -15,6 +15,12 @@ __pycache__/
 *.log
 .DS_Store
 .cursor/
+test-results/
+playwright-report/
+blob-report/
 
 *.lock
 !package-lock.json
+!uv.lock
+
+IMPLEMENTATION_PLAN.md

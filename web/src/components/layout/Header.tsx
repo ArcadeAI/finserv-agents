@@ -3,19 +3,17 @@
 import { Shield, Plus, User } from "lucide-react";
 
 interface HeaderProps {
-  isLive: boolean;
   agentRole: string;
   onNewChat: () => void;
 }
 
-const AGENTS: Record<string, { name: string; shift: string; color: string; bg: string; border: string; dot: string }> = {
+const AGENTS: Record<string, { name: string; shift: string; color: string; bg: string; border: string }> = {
   john: {
     name: "John",
     shift: "Morning Shift",
     color: "text-teal-400",
     bg: "bg-teal-500/10",
     border: "border-teal-500/20",
-    dot: "bg-teal-400",
   },
   rob: {
     name: "Rob",
@@ -23,11 +21,10 @@ const AGENTS: Record<string, { name: string; shift: string; color: string; bg: s
     color: "text-violet-400",
     bg: "bg-violet-500/10",
     border: "border-violet-500/20",
-    dot: "bg-violet-400",
   },
 };
 
-export function Header({ isLive, agentRole, onNewChat }: HeaderProps) {
+export function Header({ agentRole, onNewChat }: HeaderProps) {
   const agent = AGENTS[agentRole] ?? AGENTS.john;
 
   return (
@@ -50,17 +47,6 @@ export function Header({ isLive, agentRole, onNewChat }: HeaderProps) {
           <User className="w-3 h-3" />
           {agent.name}
           <span className="text-[10px] font-normal opacity-70">{agent.shift}</span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${
-              isLive ? "bg-emerald-400" : "bg-amber-400"
-            }`}
-          />
-          <span className="text-[11px] text-slate-500">
-            {isLive ? "Live" : "Demo"}
-          </span>
         </div>
       </div>
 

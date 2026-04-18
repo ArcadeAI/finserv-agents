@@ -1,0 +1,74 @@
+index:
+  name: idx:finserv:fraudsignal
+  prefix: finserv:fraud_signal
+  key_separator: ':'
+  storage_type: json
+fields:
+- name: borrower_id
+  type: tag
+  path: $.borrower_id
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: loan_id
+  type: tag
+  path: $.loan_id
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: signal_type
+  type: tag
+  path: $.signal_type
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: severity
+  type: tag
+  path: $.severity
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+- name: details
+  type: text
+  path: $.details
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    weight: 1.0
+    no_stem: false
+    withsuffixtrie: false
+    index_empty: false
+    unf: false
+- name: status
+  type: tag
+  path: $.status
+  attrs:
+    sortable: false
+    index_missing: false
+    no_index: false
+    separator: ','
+    case_sensitive: false
+    withsuffixtrie: false
+    index_empty: false
+version: 0.1.0

@@ -1,0 +1,18 @@
+[project]
+name = "finserv-agents"
+version = "0.1.0"
+description = "FinServ Agents live demo tooling"
+requires-python = ">=3.11"
+dependencies = [
+    "faker",
+    "openai",
+    "psycopg2-binary",
+    "python-dotenv",
+    "finserv-mcp-server",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+finserv-mcp-server = { path = "tools", editable = true }

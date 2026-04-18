@@ -7,10 +7,7 @@ import type { ToolCallData } from "@/lib/types";
 import type { UIMessage } from "ai";
 
 interface MessageBubbleProps {
-  role: "user" | "assistant" | "system";
-  content?: string;
-  parts?: UIMessage["parts"];
-  mockToolCalls?: ToolCallData[];
+  message: UIMessage;
 }
 
 function extractTextFromParts(parts?: UIMessage["parts"]): string {
@@ -54,16 +51,11 @@ function extractToolCallsFromParts(
     });
 }
 
-export function MessageBubble({
-  role,
-  content,
-  parts,
-  mockToolCalls,
-}: MessageBubbleProps) {
-  const isUser = role === "user";
+export function MessageBubble({ message }: MessageBubbleProps) {
+  const isUser = message.role === "user";
+  const text = extractTextFromParts(message.parts);
 
   if (isUser) {
-    const text = content || extractTextFromParts(parts);
     return (
       <div className="flex justify-end px-6 py-2">
         <div className="max-w-[75%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-2.5">
@@ -73,11 +65,7 @@ export function MessageBubble({
     );
   }
 
-  const toolCalls =
-    mockToolCalls && mockToolCalls.length > 0
-      ? mockToolCalls
-      : extractToolCallsFromParts(parts);
-  const text = content || extractTextFromParts(parts);
+  const toolCalls = extractToolCallsFromParts(message.parts);
 
   return (
     <div className="flex justify-start px-6 py-2">

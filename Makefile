@@ -1,43 +1,64 @@
-.PHONY: setup db seed materialize dev deploy clean install help
+.DEFAULT_GOAL := help
+
+.PHONY: help install setup setup-indices db seed materialize demo-reset db-flush dev deploy validate clean
 
 help:
 	@echo ""
 	@echo "  FinServ Agents"
 	@echo "  ──────────────────────────────────"
 	@echo "  make install      Install dependencies"
-	@echo "  make setup        DB + schema + seed + materialize to Redis"
-	@echo "  make materialize  Materialize Postgres views into Redis cache"
+	@echo "  make setup        DB + schema + seed + clean demo materialization"
+	@echo "  make setup-indices Ensure RedisVL schema files and indices exist"
+	@echo "  make materialize  Refresh live data and clear demo workflow state"
+	@echo "  make demo-reset   Clear only shift notes and activity stream state"
+	@echo "  make db-flush     Drop FinServ RediSearch indices, then flush Redis Cloud DB"
 	@echo "  make dev          Start Next.js dev server"
-	@echo "  make deploy       Deploy MCP server to Arcade Cloud"
-	@echo "  make clean        Tear down Docker volumes"
+	@echo "  make deploy       Sync Arcade secrets and deploy the MCP toolkit"
+	@echo "  make validate     Run local Python compile, web lint, and web build validation"
+	@echo "  make clean        Tear down local PostgreSQL volumes"
 	@echo ""
 
 install:
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; fi
 	npm install
-	cd database && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+	uv sync --locked
 
 setup: db seed materialize
 	@echo ""
 	@echo "  Done. Run 'make dev' to start the app."
 	@echo ""
 
+setup-indices:
+	uv run python database/setup_indices.py
+
 db:
-	docker compose up -d
+	docker compose up -d postgres
 	@echo "Waiting for PostgreSQL to start..."
-	@sleep 5
+	@until docker exec loanops-pg pg_isready -U postgres -d loanops >/dev/null 2>&1; do sleep 1; done
 	docker exec -i loanops-pg psql -U postgres -d loanops < database/schema.sql
 
 seed:
-	cd database && .venv/bin/python seed_data.py
+	uv run python database/seed_data.py
 
 materialize:
-	cd database && .venv/bin/python materialize.py
+	uv run python database/materialize.py
+
+demo-reset:
+	uv run python database/demo_reset.py
+
+db-flush:
+	uv run python database/db_flush.py
 
 dev:
 	cd web && npm run dev
 
+validate:
+	npm run validate
+
 deploy:
-	cd tools && uv sync && arcade deploy -e src/redis_mcp/server.py
+	uv run python scripts/sync_arcade_secrets.py
+	cd tools && uv sync --locked
+	cd tools && printf 'n\n' | uv run arcade deploy -e src/redis_mcp/server.py --secrets skip
 
 clean:
 	docker compose down -v
